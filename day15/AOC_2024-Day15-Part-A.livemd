@@ -1,0 +1,181 @@
+# AOC 2024 - Dec 15
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.14.0"}
+])
+
+
+
+
+```
+
+## AOC 2024 - Dec 15
+
+```elixir
+input=
+"########
+#..O.O.#
+##@.O..#
+#...O..#
+#.#.O..#
+#...O..#
+#......#
+########"
+
+moves = "<^^>>>vv<v>>v<<"
+
+mx = 10
+my = 10
+
+{:ok, input} = File.read("/AOC_2024/day15/input_a.txt")
+
+{:ok, moves} = File.read("/AOC_2024/day15/input_b.txt")
+
+moves = moves |> String.split("\n") |> Enum.join()
+
+mx = 50
+my = 50
+
+
+defmodule Day15 do
+  def print(map,mx,my) do
+     IO.puts ("")
+     for i <- 0..mx do
+       for j <- 0..my do  
+             IO.write(Map.get(map,{i,j}))
+          # IO.puts(Map.get(map,{i,j}))
+         end
+        IO.write("\n")
+       end
+      IO.puts ("")
+  end
+
+  def print_xy(_map,mx,my) do
+     for i <- 0..mx do
+       for j <- 0..my do  
+             IO.write("{#{i},#{j}}, ")
+          # IO.puts(Map.get(map,{i,j}))
+         end
+        IO.write("\n")
+       end
+      IO.puts ("")
+  end
+
+  def new_xy(move, {x,y}) do
+
+       case move do
+            "<" -> {x,y-1}
+            ">" -> {x,y+1}
+            "v" -> {x+1,y}
+            "^" -> {x-1,y}
+          end
+    
+  end
+
+  def start_xy(acc) do
+    acc 
+      |> Map.filter( fn {_key, val} -> val == "@" end) 
+      |> Enum.at(0) 
+      |> then( fn {a,_} -> a end)
+     
+    end
+
+  def move1(move , start_pos , acc) do
+
+          binding()
+          next_pos = Day15.new_xy(move,start_pos)
+          val = Map.get(acc, next_pos)
+          case val do
+              "#" -> acc
+              "O" ->  
+                    acc = move1( move , next_pos , acc) 
+                    swap(move, start_pos ,next_pos, acc) 
+                
+              "." -> swap(move, start_pos ,next_pos, acc)  
+          end
+    end
+
+  def move_pointer(move , start , acc) do
+
+          binding()
+          IO.inspect(move , label: "move")
+          new_pos = Day15.new_xy(move,start)
+          val = Map.get(acc, new_pos)
+    
+          case val do
+              "#" -> acc
+              "O" -> acc
+              "." -> acc  |> Map.put(new_pos ,"@" ) |> Map.put(start ,"." ) 
+          end
+    
+     
+    end
+
+  def swap(move, start_pos ,next_pos, acc) do
+          binding()
+          new_val = Map.get(acc, next_pos)
+          if(new_val ==".") do 
+              old_val = Map.get(acc, start_pos)
+              acc |> Map.put(next_pos ,old_val ) |> Map.put( start_pos ,new_val )
+          else
+            acc
+          end
+        
+    end
+  
+end
+
+map=
+input 
+|> String.split("\n")
+|> Enum.reject(&(&1=="")) 
+|> Enum.with_index(0)
+|> Enum.map( fn {ln_input , row }-> 
+                ln_input 
+                |> String.graphemes() 
+                |> Enum.with_index(0) 
+                |> Enum.map( fn {val , column} -> {{row,column} ,val} end)
+                |> Enum.into(%{})
+            end )
+|> Enum.concat()
+|> Enum.into(%{})
+
+#find the location 
+
+start_pos = Map.filter(map, fn {_key, val} -> val == "@" end) |> Enum.at(0) |> then( fn {a,_} -> a end)
+
+IO.inspect(start_pos, label: "start_pos") 
+
+moves 
+  |> String.graphemes()
+  |> Enum.map_reduce(map , fn move , acc -> 
+       
+    
+        start_pos = {x,y} =  Day15.start_xy(acc)  
+        next_pos = Day15.new_xy(move,{x,y})
+        val = Map.get(acc, next_pos)        
+        acc = case val do
+              "#" -> acc
+              "O" -> 
+                     acc = Day15.move1(move,next_pos,acc) 
+                      Day15.swap(move, start_pos ,next_pos, acc)   
+              "." ->  Day15.swap(move, start_pos ,next_pos, acc) 
+             
+          end
+        
+        {move , acc}
+        
+    end )
+|> then( fn  {move , acc} -> 
+   # binding()
+     IO.inspect(move , label: "move")
+     Day15.print(acc,mx,my)
+      acc
+  end)
+|> Enum.filter( fn { _pos , val} -> val == "O" end)
+|> Enum.map( fn {{x,y},_} -> (x * 100 + y) end)
+|> Enum.sum()
+
+
+```
